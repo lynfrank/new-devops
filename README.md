@@ -1,5 +1,6 @@
-# Getting started
+# Readme english
 
-This repository is a sample application for users following the getting started guide at https://docs.docker.com/get-started/.
-
-The application is based on the application from the getting started tutorial at https://github.com/docker/getting-started
+Hello,
+This is Paul.
+I took this application from docker repo and I am planing to do full devops project integrating all devolps tools that I learn.
+Let's start.
