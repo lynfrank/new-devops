@@ -2,7 +2,14 @@
 
 FROM node:lts-alpine
 WORKDIR /app
+
+COPY package.json yarn.lock ./
+
+RUN yarn install --frozen-lockfil --production
+
+# Pour l'instant on utilise root user mais apres on peut creer un user spécifique pour cet application
 COPY . .
-RUN yarn install --production
+
 CMD ["node", "src/index.js"]
-EXPOSE 3000
+
+EXPOSE 3000 
