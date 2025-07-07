@@ -4,3 +4,5 @@ docker-compose up -d
 docker-compose stop app
 docker-compose up -d --no-deps app
 docker-compose logs -f app
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
