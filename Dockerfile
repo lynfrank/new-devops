@@ -1,15 +1,16 @@
 # syntax=docker/dockerfile:1
 
-FROM node:lts-alpine
+FROM node:18-alpine
 WORKDIR /app
 
+# Installation des dépendances (optimise le cache)
 COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production
 
-RUN yarn install --frozen-lockfil --production
-
-# Pour l'instant on utilise root user mais apres on peut creer un user spécifique pour cet application
+# Copie de l'application
 COPY . .
 
-CMD ["node", "src/index.js"]
+# Écoute sur toutes les interfaces
+CMD ["node", "src/index.js", "--host", "0.0.0.0"]
 
-EXPOSE 3000 
+EXPOSE 3000

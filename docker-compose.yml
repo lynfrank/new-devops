@@ -2,32 +2,28 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: pauldevopsfr/todo-app:v1.0.0
+    build: .
+    image: todo-app-prod
     ports:
-      - "0.0.0.0:3000:3000"
-    environment:
-      MYSQL_HOST: mysql
-      MYSQL_USER: root
-      MYSQL_PASSWORD: secret
-      MYSQL_DB: todos
+      - "3000:3000"
+    restart: unless-stopped
     depends_on:
       mysql:
-        condition: service_healthy  
+        condition: service_healthy
 
   mysql:
     image: mysql:8.0
     volumes:
-      - todo-mysql-data:/var/lib/mysql
+      - mysql-data:/var/lib/mysql  # Volume persistant
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: todos
-    healthcheck:  
+    healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
+      interval: 5s
+      timeout: 10s
       retries: 10
+    restart: unless-stopped
 
 volumes:
-  todo-mysql-data:
+  mysql-data:  # Volume déclaré explicitement
