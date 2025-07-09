@@ -2,67 +2,64 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = "todo-app-prod"
         APP_PORT = "3000"
-        VM_IP = "172.184.141.110"  // ← Remplacez par votre IP
+        VM_IP = "172.184.141.110"  // Votre IP
     }
 
     stages {
-        // ÉTAPE 1: Préparation de l'infrastructure
-        stage('🛠️ Setup Infrastructure') {
+        stage('1. Checkout & Setup') {
             steps {
-                echo "1. Création des ressources Docker"
-                sh '''
-                    docker volume create mysql_data || true
-                    docker network create todo_network || true
-                    docker-compose down || true
-                '''
+                echo "🔁 Récupération du code"
+                git branch: 'main', 
+                url: 'https://github.com/stanilpaul/docker-getting-started-devops-enhanced.git'
+                
+                sh 'docker volume create todo-mysql-data || true'
             }
         }
 
-        // ÉTAPE 2: Build de l'image
-        stage('🔨 Build Image') {
+        stage('2. Build & Test') {
             steps {
-                echo "2. Construction de l'image Docker"
+                echo "🔨 Construction et tests"
                 sh '''
-                    docker-compose build --no-cache --force-rm
-                    docker images | grep ${APP_NAME}
-                '''
-            }
-        }
-
-        // ÉTAPE 3: Déploiement
-        stage('🚀 Deploy') {
-            steps {
-                echo "3. Lancement des conteneurs"
-                sh '''
+                    # Lancement temporaire pour les tests
                     docker-compose up -d
-                    sleep 10  # Attente démarrage
-                    docker-compose ps
+                    
+                    # Attente démarrage MySQL
+                    sleep 15
+                    
+                    # Exécution des tests
+                    docker-compose exec app yarn test || true
+                    
+                    # Arrêt propre SANS supprimer les volumes
+                    docker-compose down
                 '''
             }
         }
 
-        // ÉTAPE 4: Vérification
-        stage('✅ Verify') {
+        stage('3. Deploy Production') {
             steps {
-                echo "4. Contrôle de l'application"
+                echo "🚀 Déploiement final"
                 sh '''
+                    # Lancement persistant
+                    docker-compose up -d
+                    
+                    # Vérification
+                    sleep 5
                     curl -I http://localhost:${APP_PORT} || true
-                    docker-compose logs --tail=20
                 '''
-                echo "🌐 Application disponible: http://${VM_IP}:${APP_PORT}"
             }
         }
     }
 
     post {
-        failure {
-            echo "❌ Échec du déploiement - Logs:"
-            sh 'docker-compose logs || true'
-        }
         success {
-            echo "✅ Succès - Application en production!"
+            echo "✅ SUCCÈS: Application en production!"
+            echo "🌐 Accédez à: http://${VM_IP}:${APP_PORT}"
+            sh 'docker ps'  // Montre les conteneurs actifs
+        }
+        failure {
+            echo "❌ ÉCHEC: Vérifiez les logs"
+            sh 'docker-compose logs || true'
         }
     }
 }
