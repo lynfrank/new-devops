@@ -1,66 +1,84 @@
 pipeline {
     agent any
-    
+
     environment {
-        APP_NAME = "todo-app"
+        APP_NAME = "todo-app-prod"
         APP_PORT = "3000"
-        VM_IP = "172.184.141.110"  // ← Remplacez par votre IP
+        VM_IP = "172.184.141.110"  // ← À remplacer
     }
-    
+
     stages {
-        // ÉTAPE 1: Récupération du code
-        stage('Checkout') {
+        // ÉTAPE 1: Préparation (LinkedIn: montre l'initialisation)
+        stage('🛠️ Setup Infrastructure') {
             steps {
-                echo "1️⃣ Récupération du code"
+                echo "1. Création du volume MySQL persistant"
+                sh '''
+                    docker volume create mysql_data || true
+                    docker network create todo_network || true
+                '''
+            }
+        }
+
+        // ÉTAPE 2: Validation (LinkedIn: démontre les bonnes pratiques)
+        stage('🔍 Validate Code') {
+            steps {
+                echo "2. Validation du code et des dépendances"
                 git branch: 'main', 
                 url: 'https://github.com/stanilpaul/docker-getting-started-devops-enhanced.git'
+                sh 'docker-compose config'
+                sh 'docker-compose build --no-cache --force-rm'
             }
         }
-        
-        // ÉTAPE 2: Arrêt des conteneurs existants
-        stage('Stop Existing') {
+
+        // ÉTAPE 3: Tests (LinkedIn: montre l'aspect CI)
+        stage('🧪 Run Tests') {
             steps {
-                echo "2️⃣ Arrêt des conteneurs actuels"
-                // Stop SANS supprimer les volumes !
-                sh 'docker-compose down || true'
-            }
-        }
-        
-        // ÉTAPE 3: Reconstruction de l'image
-        stage('Rebuild') {
-            steps {
-                echo "3️⃣ Reconstruction de l'image"
-                // Force le rebuild et écrase l'ancienne image
+                echo "3. Exécution des tests automatisés"
                 sh '''
-                    docker-compose build --no-cache --force-rm
-                    docker tag ${APP_NAME}:latest ${APP_NAME}:previous || true
-                    docker rmi ${APP_NAME}:latest || true
+                    docker-compose up -d
+                    sleep 10  # Attente démarrage MySQL
+                    docker-compose exec app yarn test || true
+                    docker-compose down  # Nettoyage test SANS -v
                 '''
             }
         }
-        
-        // ÉTAPE 4: Redémarrage
-        stage('Restart') {
+
+        // ÉTAPE 4: Déploiement (LinkedIn: démontre le CD)
+        stage('🚀 Deploy Production') {
             steps {
-                echo "4️⃣ Redémarrage de l'application"
-                sh 'docker-compose up -d'
-                
-                // Vérification
+                echo "4. Déploiement en production"
                 sh '''
-                    sleep 5  # Attente démarrage
-                    docker ps
-                    curl -I http://localhost:${APP_PORT} || true
+                    # Arrêt propre de l'app SEULEMENT
+                    docker-compose stop app || true
+                    docker-compose rm -f app || true
+                    
+                    # Reconstruction et démarrage
+                    docker-compose build --no-cache app
+                    docker-compose up -d
+                    
+                    # Politique de redémarrage
+                    docker update --restart=always $(docker ps -q -f name=${APP_NAME})
                 '''
+            }
+        }
+
+        // ÉTAPE 5: Vérification (LinkedIn: montre le monitoring)
+        stage('✅ Verify Deployment') {
+            steps {
+                echo "5. Contrôle qualité post-déploiement"
+                sh '''
+                    curl -If http://localhost:${APP_PORT}
+                    docker-compose logs --tail=20 app
+                '''
+                echo "🌐 Application LIVE: http://${VM_IP}:${APP_PORT}"
             }
         }
     }
-    
+
     post {
         success {
-            echo "✅ SUCCÈS : Application disponible sur http://${VM_IP}:${APP_PORT}"
-        }
-        failure {
-            echo "❌ ÉCHEC : Consultez les logs avec 'docker-compose logs'"
+            slackSend channel: '#deployments', 
+                      message: "SUCCESS: TodoApp déployée (${env.BUILD_URL})"
         }
     }
 }

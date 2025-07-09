@@ -3,22 +3,28 @@ version: '3.8'
 services:
   app:
     build: .
-    image: todo-app  # ← Nom fixe pour toujours écraser la même image
+    image: todo-app-prod  # Nom fixe
     ports:
       - "3000:3000"
     depends_on:
       mysql:
         condition: service_healthy
+    restart: unless-stopped  # Redémarrage auto
 
   mysql:
     image: mysql:8.0
     volumes:
-      - mysql-data:/var/lib/mysql  # ← Même volume à chaque fois
+      - mysql_data:/var/lib/mysql  # Volume externe persistant
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: todos
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped  # Redémarrage auto
 
 volumes:
-  mysql-data:  # ← Volume déclaré explicitement
+  mysql_data:
+    external: true  # Volume géré manuellement
