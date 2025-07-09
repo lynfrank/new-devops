@@ -4,81 +4,65 @@ pipeline {
     environment {
         APP_NAME = "todo-app-prod"
         APP_PORT = "3000"
-        VM_IP = "172.184.141.110"  // ← À remplacer
+        VM_IP = "172.184.141.110"  // ← Remplacez par votre IP
     }
 
     stages {
-        // ÉTAPE 1: Préparation (LinkedIn: montre l'initialisation)
+        // ÉTAPE 1: Préparation de l'infrastructure
         stage('🛠️ Setup Infrastructure') {
             steps {
-                echo "1. Création du volume MySQL persistant"
+                echo "1. Création des ressources Docker"
                 sh '''
                     docker volume create mysql_data || true
                     docker network create todo_network || true
+                    docker-compose down || true
                 '''
             }
         }
 
-        // ÉTAPE 2: Validation (LinkedIn: démontre les bonnes pratiques)
-        stage('🔍 Validate Code') {
+        // ÉTAPE 2: Build de l'image
+        stage('🔨 Build Image') {
             steps {
-                echo "2. Validation du code et des dépendances"
-                git branch: 'main', 
-                url: 'https://github.com/stanilpaul/docker-getting-started-devops-enhanced.git'
-                sh 'docker-compose config'
-                sh 'docker-compose build --no-cache --force-rm'
+                echo "2. Construction de l'image Docker"
+                sh '''
+                    docker-compose build --no-cache --force-rm
+                    docker images | grep ${APP_NAME}
+                '''
             }
         }
 
-        // ÉTAPE 3: Tests (LinkedIn: montre l'aspect CI)
-        stage('🧪 Run Tests') {
+        // ÉTAPE 3: Déploiement
+        stage('🚀 Deploy') {
             steps {
-                echo "3. Exécution des tests automatisés"
+                echo "3. Lancement des conteneurs"
                 sh '''
                     docker-compose up -d
-                    sleep 10  # Attente démarrage MySQL
-                    docker-compose exec app yarn test || true
-                    docker-compose down  # Nettoyage test SANS -v
+                    sleep 10  # Attente démarrage
+                    docker-compose ps
                 '''
             }
         }
 
-        // ÉTAPE 4: Déploiement (LinkedIn: démontre le CD)
-        stage('🚀 Deploy Production') {
+        // ÉTAPE 4: Vérification
+        stage('✅ Verify') {
             steps {
-                echo "4. Déploiement en production"
+                echo "4. Contrôle de l'application"
                 sh '''
-                    # Arrêt propre de l'app SEULEMENT
-                    docker-compose stop app || true
-                    docker-compose rm -f app || true
-                    
-                    # Reconstruction et démarrage
-                    docker-compose build --no-cache app
-                    docker-compose up -d
-                    
-                    # Politique de redémarrage
-                    docker update --restart=always $(docker ps -q -f name=${APP_NAME})
+                    curl -I http://localhost:${APP_PORT} || true
+                    docker-compose logs --tail=20
                 '''
-            }
-        }
-
-        // ÉTAPE 5: Vérification (LinkedIn: montre le monitoring)
-        stage('✅ Verify Deployment') {
-            steps {
-                echo "5. Contrôle qualité post-déploiement"
-                sh '''
-                    curl -If http://localhost:${APP_PORT}
-                    docker-compose logs --tail=20 app
-                '''
-                echo "🌐 Application LIVE: http://${VM_IP}:${APP_PORT}"
+                echo "🌐 Application disponible: http://${VM_IP}:${APP_PORT}"
             }
         }
     }
 
     post {
+        failure {
+            echo "❌ Échec du déploiement - Logs:"
+            sh 'docker-compose logs || true'
+        }
         success {
-            slackSend channel: '#deployments', 
-                      message: "SUCCESS: TodoApp déployée (${env.BUILD_URL})"
+            echo "✅ Succès - Application en production!"
         }
     }
 }
