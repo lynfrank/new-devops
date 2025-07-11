@@ -1,5 +1,6 @@
 # 🚀 DevOps CI/CD Pipeline: Jenkins on Azure with Terraform
 
+![devops-azure-terraform-project](https://github.com/user-attachments/assets/6eaeb72c-9dd8-4a98-90de-7f3ff33729e8)
 
 ## 🌟 Project Overview
 This project implements an automated CI/CD pipeline for a containerized application:
@@ -37,3 +38,6 @@ E5 --> H[MySQL Container]
 H -->|Persistent Storage| I[Azure Disk]
 classDef dev fill:#9f9,stroke:#333;
 class A dev;
+
+
+
