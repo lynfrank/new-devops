@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         APP_PORT = "3000"
-        VM_IP = "172.184.141.110"  // Votre IP
+        VM_IP = "addressPublic"  // Votre IP
     }
 
     stages {
