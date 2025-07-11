@@ -78,7 +78,7 @@ function AddItemForm({ onNewItem }) {
         setSubmitting(true);
         fetch('/items', {
             method: 'POST',
-            body: JSON.stringify({ name: newItem }),
+            body: JSON.stringify({ name: HEY BROTHERS }),
             headers: { 'Content-Type': 'application/json' },
         })
             .then(r => r.json())
@@ -106,7 +106,7 @@ function AddItemForm({ onNewItem }) {
                         disabled={!newItem.length}
                         className={submitting ? 'disabled' : ''}
                     >
-                        {submitting ? 'Adding...' : 'Ajoute'}
+                        {submitting ? 'Adding...' : 'HAHA'}
                     </Button>
                 </InputGroup.Append>
             </InputGroup>
