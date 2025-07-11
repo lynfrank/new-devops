@@ -1,6 +1,5 @@
 # 🚀 DevOps CI/CD Pipeline: Jenkins on Azure with Terraform
 
-Hello! I'm **Paul Stanil Grasian** **https://www.linkedin.com/in/paul-stanil-grasian-9a9989187/**, a Cloud/DevOps Engineer certified in Azure (AZ-104). I'm currently seeking new opportunities in cloud infrastructure and DevOps. This project demonstrates a complete CI/CD pipeline implementation using tools I specialize in.
 
 ## 🌟 Project Overview
 This project implements an automated CI/CD pipeline for a containerized application:
